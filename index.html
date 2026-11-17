@@ -5186,13 +5186,14 @@
       jsonBytes = new TextEncoder().encode(JSON.stringify(meta));
     }
 
-    const totalLen = jsonBytes ? 264 + jsonBytes.length : 130 + nameBytes.length;
+    const totalLen = jsonBytes ? 264 + jsonBytes.length : 132 + nameBytes.length;
     const buf = new Uint8Array(totalLen);
     const view = new DataView(buf.buffer);
-    // VB6 Open "rekor.dat" For Random As #1: Kayıt 1 = Float32 puan (offset 0), Kayıt 2 = ANSI ad (offset 128)
+    // VB6 Open "rekor.dat" For Random As #1: Kayıt 1 = Float32 puan (offset 0), Kayıt 2 = Variant(vbString=8) ANSI ad (offset 128)
     view.setFloat32(0, safeRekorPuan, true);
-    view.setUint16(128, nameBytes.length, true);
-    buf.set(nameBytes, 130);
+    view.setUint16(128, 8, true);
+    view.setUint16(130, nameBytes.length, true);
+    buf.set(nameBytes, 132);
 
     if (jsonBytes) {
       buf.set([0x49, 0x53, 0x4C, 0x4D], 256); // "ISLM"
@@ -5249,14 +5250,26 @@
       let vbAdi = "";
       let structOk = bytes.length === 4 || (bytes.length > 4 && bytes.length < 130 && bytes.includes(0));
 
-      if (bytes.length >= 130) {
-        const nameLen = view.getUint16(128, true);
-        if (bytes.length <= 256 && nameLen <= 120 && 130 + nameLen <= bytes.length) {
-          vbAdi = cleanName(cp1254Decode(bytes.subarray(130, 130 + nameLen)));
+      if (bytes.length >= 130 && bytes.length <= 256) {
+        const tagOrLen = view.getUint16(128, true);
+        if (bytes.length >= 132 && tagOrLen === 8 && view.getUint16(130, true) <= 122 && 132 + view.getUint16(130, true) <= bytes.length) {
+          // Orijinal VB6 Variant(vbString = 8): [08 00] [uint16 len] [CP1254 bytes]
+          const varLen = view.getUint16(130, true);
+          vbAdi = cleanName(cp1254Decode(bytes.subarray(132, 132 + varLen)));
+          structOk = true;
+        } else if (tagOrLen === 0) {
+          // Boş Variant(vbEmpty = 0) veya sıfır uzunluklu ad
+          vbAdi = "";
+          structOk = true;
+        } else if (tagOrLen <= 120 && 130 + tagOrLen <= bytes.length) {
+          // Eski HTML5 / VB6 sabit String biçimi: [uint16 len] [CP1254 bytes]
+          vbAdi = cleanName(cp1254Decode(bytes.subarray(130, 130 + tagOrLen)));
           structOk = true;
         } else {
           structOk = false;
         }
+      } else if (bytes.length > 256) {
+        structOk = false;
       }
 
       if (bytes.length >= 264 &&

@@ -97,7 +97,7 @@ Klavye kısayollarını oyun altındaki bilgi çubuğu olarak **Ayarlar → Klav
 
 Oyun, klasik masaüstü sürümünün `rekor.dat` dosyalarıyla çift yönlü uyumludur:
 
-- **Klasik VB6 İkili Uyumluluk:** `Open "rekor.dat" For Random As #1` yapısına uygun olarak bayt `0`'da little-endian `Float32` rekor puanını, bayt `128`'de uzunluk + **Windows-1254 (CP1254)** Türkçe karakter kodlamasıyla oyuncu adını saklar.
+- **Klasik VB6 İkili Uyumluluk:** `Open "rekor.dat" For Random As #1` yapısına uygun olarak bayt `0`'da little-endian `Float32` rekor puanını, bayt `128`'de `Variant` (`vbString = 8`) başlığı + uzunluk + **Windows-1254 (CP1254)** Türkçe karakter kodlamasıyla oyuncu adını saklar (eski sabit-string düzeniyle de geriye dönük okuma uyumludur).
 - **Genişletilmiş HTML5 Meta Verisi:** Kayıt alınırken `256.` bayttan itibaren `"ISLM"` başlığıyla UTF-8 JSON meta verisi eklenir; böylece hem rekor hem de aktif oyun puanı (`devamPuan`) aynı `rekor.dat` dosyasında korunur.
 - **Esnek Okuma Desteği:** Klasik VB6 `rekor.dat` (0 bayt boş dosya dâhil), HTML5 genişletilmiş `rekor.dat`, JSON ve düz metin (`isim;skor` veya 2 satırlı format) dosyalarını içe aktarabilir; yükleme sırasında **aktif puanla devam etme** veya **yalnızca rekoru yükleme** seçenekleri sunar.
 - **Tarayıcı İçi Depolama (`localStorage`):**
